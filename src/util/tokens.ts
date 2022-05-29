@@ -1,14 +1,25 @@
+import Ajv from 'ajv';
 import winston from 'winston';
 import StyleDictionary from 'style-dictionary';
 import path from 'path';
 import shell from 'shelljs';
+import traverse from 'json-schema-traverse';
 import tokens from '@kickstartds/core/design-tokens/index.js';
+import mergeAllOf from 'json-schema-merge-allof';
+import $RefParser from '@apidevtools/json-schema-ref-parser';
+import jsonPointer from 'json-pointer';
 import chalkTemplate from 'chalk-template';
 import { capitalCase } from 'change-case';
 import { readFile, writeFile } from 'fs';
+import { JSONSchema4, JSONSchema7 } from 'json-schema';
+import { inlineDefinitions } from '@kickstartds/jsonschema-utils/dist/helpers.js';
+import { config as dotEnvConfig } from 'dotenv';
+import { compile } from 'json-schema-to-typescript';
 import { promisify } from 'util';
-import { traverse } from 'object-traversal';
+import { traverse as objectTraverse } from 'object-traversal';
 import { createRequire } from 'module';
+import * as Figma from 'figma-api';
+
 import {
   TokenInterface,
   TokensType,
@@ -21,6 +32,7 @@ import {
   FontToken,
   TextStyleValue
 } from '@specifyapp/parsers/types';
+import { KickstartDSFigmaTokenStructure } from '../../figma-file.js';
 import promiseHelper from './promise.js';
 
 const { config, writeTokens } = tokens;
@@ -632,7 +644,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -645,7 +657,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -695,7 +707,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -708,7 +720,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -760,7 +772,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -773,7 +785,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -825,7 +837,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -838,7 +850,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -898,7 +910,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName && refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -911,7 +923,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else if (refColorName) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -961,7 +973,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName && refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -974,7 +986,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else if (refColorName) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -1026,7 +1038,7 @@ export default (logger: winston.Logger): TokensUtil => {
 
                 const referenceableTokens: string[] = [];
                 if (refColorName && refColorName.endsWith('-inverted')) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -1039,7 +1051,7 @@ export default (logger: winston.Logger): TokensUtil => {
                     }
                   });
                 } else if (refColorName) {
-                  traverse(map.color, ({ key, value, meta }) => {
+                  objectTraverse(map.color, ({ key, value, meta }) => {
                     if (
                       key === 'base' &&
                       value.value.r === (token.value as ColorValue).r &&
@@ -1109,7 +1121,7 @@ export default (logger: winston.Logger): TokensUtil => {
               const [base, orientation] = measurementVariant.split('-');
 
               const referenceableTokens: string[] = [];
-              traverse(map.spacing, ({ key, value, meta }) => {
+              objectTraverse(map.spacing, ({ key, value, meta }) => {
                 if (
                   key === 'base' &&
                   value.value ===
@@ -1161,7 +1173,7 @@ export default (logger: winston.Logger): TokensUtil => {
               }
             } else {
               const referenceableTokens: string[] = [];
-              traverse(map.spacing, ({ key, value, meta }) => {
+              objectTraverse(map.spacing, ({ key, value, meta }) => {
                 if (
                   key === 'base' &&
                   value.value ===
@@ -1198,7 +1210,7 @@ export default (logger: winston.Logger): TokensUtil => {
             const [, durationName] = splitName;
 
             const referenceableTokens: string[] = [];
-            traverse(map.transition.duration, ({ key, value, meta }) => {
+            objectTraverse(map.transition.duration, ({ key, value, meta }) => {
               if (
                 key === 'value' &&
                 value ===
@@ -1360,6 +1372,146 @@ export default (logger: winston.Logger): TokensUtil => {
   ): void =>
     platforms.forEach((platform) => styleDictionary.buildPlatform(platform));
 
+  // TODO add `required` everywhere as needed in figma-tokens.schema.json
+  const syncToFigma = async (
+    callingPath: string,
+    styleDictionary: StyleDictionary.Core
+  ): Promise<void> => {
+    // const variables = dotEnvConfig().parsed;
+    // const personalAccessToken =
+    //   (variables && variables.FIGMA_PERSONAL_ACCESS_TOKEN) ||
+    //   process.env.FIGMA_PERSONAL_ACCESS_TOKEN ||
+    //   '';
+    // const fileId =
+    //   (variables && variables.FIGMA_FILE_ID) || process.env.FIGMA_FILE_ID || '';
+    // const api = new Figma.Api({
+    //   personalAccessToken
+    // });
+    // const file = await api.getFile(fileId);
+    // fsWriteFilePromise('figmaFile.json', JSON.stringify(file, null, 2));
+
+    // eslint-disable-next-line new-cap
+    const ajv = new Ajv.default({
+      removeAdditional: true,
+      validateSchema: true,
+      schemaId: '$id',
+      allErrors: true,
+      strictTuples: false
+    });
+
+    const figmaTokensSchema = JSON.parse(
+      await fsReadFilePromise(
+        `${callingPath}/figma-tokens.schema.json`,
+        'utf-8'
+      )
+    ) as JSONSchema7;
+    const figmaTokensJson = JSON.parse(
+      await fsReadFilePromise(`${callingPath}/figmaFile.json`, 'utf-8')
+    );
+
+    const validate = ajv.compile(figmaTokensSchema);
+    const valid = validate(figmaTokensJson);
+    if (!valid) {
+      logger.error(
+        `Invalid JSON in sync to figma task:\n${JSON.stringify(
+          validate.errors,
+          null,
+          2
+        )}`
+      );
+      shell.exit(1);
+    }
+
+    const dereffed = await $RefParser.dereference(figmaTokensSchema);
+    const merged = mergeAllOf(dereffed);
+    inlineDefinitions([figmaTokensSchema]);
+    delete merged.definitions;
+
+    const types = await compile(merged as JSONSchema4, 'FigmaTokensSchema');
+    await fsWriteFilePromise('figma-file.d.ts', types);
+
+    // objectTraverse(
+    //   figmaTokensJson as KickstartDSFigmaTokenStructure,
+    //   ({ key, value, meta }) => {
+    //     console.log(meta.nodePath);
+    //   }
+    // );
+
+    await fsWriteFilePromise(
+      'figma-tokens.schema.dereffed.json',
+      JSON.stringify(merged, null, 2)
+    );
+
+    const parsedTokens: KickstartDSFigmaTokenStructure = {};
+    traverse(merged, {
+      cb: (
+        schema,
+        pointer,
+        _rootSchema,
+        parentPointer,
+        _parentKeyword,
+        parentSchema
+      ) => {
+        const objectPointer = pointer
+          .replaceAll('/properties', '')
+          .replaceAll('/items', '');
+
+        if (objectPointer.endsWith('/additionalItems') && parentPointer) {
+          const objectParentPointer =
+            parentPointer
+              .replaceAll('/properties', '')
+              .replaceAll('/items', '') || '';
+
+          if (parentSchema) {
+            const array = jsonPointer.get(figmaTokensJson, objectParentPointer);
+            const difference = parentSchema.items.length - array.length;
+            if (difference < 0) {
+              const additionalItems: JSONSchema7[] = array.slice(difference);
+              additionalItems.forEach((additionalItem, index) => {
+                traverse(parentSchema.additionalItems, {
+                  cb: (additionalSchema, additionalPointer) => {
+                    if (
+                      !additionalSchema.properties &&
+                      !additionalSchema.items
+                    ) {
+                      const additionalObjectPointer = additionalPointer
+                        .replaceAll('/properties', '')
+                        .replaceAll('/items', '');
+                      const value = jsonPointer.get(
+                        additionalItem,
+                        additionalObjectPointer
+                      );
+                      jsonPointer.set(
+                        parsedTokens,
+                        `${objectParentPointer}/${
+                          array.length + difference + index
+                        }${additionalObjectPointer}`,
+                        value
+                      );
+                    }
+                  }
+                });
+              });
+            }
+          }
+        } else if (
+          objectPointer &&
+          !objectPointer.includes('/additionalItems/')
+        ) {
+          if (!schema.properties && !schema.items) {
+            const value = jsonPointer.get(figmaTokensJson, objectPointer);
+            jsonPointer.set(parsedTokens, objectPointer, value);
+          }
+        }
+      }
+    });
+
+    await fsWriteFilePromise(
+      'parsed-tokens.json',
+      JSON.stringify(parsedTokens, null, 2)
+    );
+  };
+
   const getDefaultStyleDictionary = (
     callingPath: string,
     sourceDir: string
@@ -1405,6 +1557,7 @@ export default (logger: winston.Logger): TokensUtil => {
       generateFromSpecifyJson,
       generateFromSpecifyPath,
       compileTokens,
+      syncToFigma,
       getDefaultStyleDictionary,
       getStyleDictionary
     }
